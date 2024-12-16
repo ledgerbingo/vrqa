@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VRQA App</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100vh;
+        }
+        #camera-container {
+            flex: 1;
+            background-color: black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        video, img {
+            max-width: 100%;
+            height: auto;
+        }
+        #input-container {
+            padding: 1em;
+            background-color: #f4f4f4;
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #response {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 1em;
+            font-size: 1.2em;
+            color: #333;
+        }
+        #question {
+            width: 80%;
+            padding: 0.8em;
+            font-size: 1em;
+            margin-bottom: 1em;
+        }
+        #ask-button {
+            padding: 0.8em 1.5em;
+            font-size: 1em;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        #ask-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div id="camera-container">
+        <img id="camera-feed" src="" alt="Camera feed not available">
+    </div>
+    <div id="input-container">
+        <div id="response">Ask a question to see the response here.</div>
+        <input type="text" id="question" placeholder="Type your question here...">
+        <button id="ask-button">Ask</button>
+    </div>
+    <script>
+        const cameraFeed = document.getElementById('camera-feed');
+        const responseDiv = document.getElementById('response');
+        const questionInput = document.getElementById('question');
+        const askButton = document.getElementById('ask-button');
+
+        // Fetch camera feed
+        async function updateCameraFeed() {
+            try {
+                const res = await fetch('/camera_feed');
+                const data = await res.json();
+                if (data.frame) {
+                    cameraFeed.src = `data:image/jpeg;base64,${data.frame}`;
+                }
+            } catch (error) {
+                console.error('Error fetching camera feed:', error);
+            }
+        }
+
+        // Fetch AI response
+        askButton.addEventListener('click', async () => {
+            const question = questionInput.value.trim();
+            if (!question) {
+                responseDiv.textContent = 'Please enter a question!';
+                return;
+            }
+            responseDiv.textContent = 'Processing...';
+            try {
+                const res = await fetch('/ask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question })
+                });
+                const data = await res.json();
+                if (data.response) {
+                    responseDiv.textContent = data.response;
+                } else if (data.error) {
+                    responseDiv.textContent = `Error: ${data.error}`;
+                }
+            } catch (error) {
+                responseDiv.textContent = 'An error occurred. Please try again.';
+                console.error('Error fetching AI response:', error);
+            }
+        });
+
+        // Update the camera feed every 100ms
+        setInterval(updateCameraFeed, 100);
+    </script>
+</body>
+</html>
